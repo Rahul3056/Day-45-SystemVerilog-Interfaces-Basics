@@ -1,0 +1,109 @@
+
+### ✅ **Example: Basic Bus Interface Between Testbench and DUT**
+
+This example shows how to:
+
+* Declare an interface
+* Connect it to a module (DUT)
+* Drive it from a testbench
+
+---
+
+### **1. Define the Interface**
+
+```systemverilog
+interface bus_if();
+    logic clk;
+    logic rst_n;
+    logic [7:0] addr;
+    logic [7:0] data;
+    logic read;
+    logic write;
+endinterface
+```
+
+---
+
+### **2. DUT Using the Interface**
+
+```systemverilog
+module dut(bus_if bus);
+
+    // Simple example logic: load address + 1 into data on write
+    always_ff @(posedge bus.clk or negedge bus.rst_n) begin
+        if (!bus.rst_n)
+            bus.data <= 8'd0;
+        else if (bus.write)
+            bus.data <= bus.addr + 8'd1;
+    end
+
+endmodule
+```
+
+---
+
+### **3. Testbench Using the Interface**
+
+```systemverilog
+module tb;
+
+    // Instantiate the interface
+    bus_if bus();
+
+    // Connect interface to DUT
+    dut u_dut(.bus(bus));
+
+    // Clock generator
+    initial begin
+        bus.clk = 0;
+        forever #5 bus.clk = ~bus.clk;
+    end
+
+    // Stimulus
+    initial begin
+        bus.rst_n = 0;
+        bus.write = 0;
+        bus.addr  = 8'd0;
+        #12;
+        
+        bus.rst_n = 1;
+        #10;
+
+        bus.write = 1;
+        bus.addr  = 8'd10;
+        #10;
+
+        bus.write = 0;
+        #10;
+
+        $display("Data written = %0d", bus.data);
+        $finish;
+    end
+
+endmodule
+```
+
+---
+
+### 📝 **Simulation Result**
+
+```
+Data written = 11
+```
+
+Because:
+
+* `addr = 10`
+* On `write`, DUT sets `data = addr + 1 = 11`
+
+---
+
+### ✅ Key Takeaways
+
+| Feature     | Role                               |
+| ----------- | ---------------------------------- |
+| `interface` | Bundles signals like clk, addr     |
+| `bus_if`    | Shared between testbench and DUT   |
+| `dut`       | Reads/writes signals via interface |
+| `tb`        | Drives interface for testing       |
+
